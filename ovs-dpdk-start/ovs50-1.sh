@@ -1,0 +1,11 @@
+sudo /home/chix/qemu-2.9.0/x86_64-softmmu/qemu-system-x86_64 -vnc :1 \
+-enable-kvm -smp 8 -m 2048 \
+-drive file=../ovs50-1.img,if=virtio \
+-object memory-backend-file,id=mem,size=2048M,mem-path=/dev/hugepages,share=on \
+-numa node,memdev=mem -mem-prealloc \
+-chardev socket,id=char1,path=/home/chix/dpdk/socket/vhost-client-1,server \
+-netdev type=vhost-user,id=mynet1,chardev=char1,vhostforce \
+-device virtio-net-pci,mac=00:00:00:00:10:01,netdev=mynet1 \
+-chardev socket,id=char2,path=/home/chix/dpdk/socket/vhost-client-2,server \
+-netdev type=vhost-user,id=mynet2,chardev=char2,vhostforce \
+-device virtio-net-pci,mac=00:00:00:00:11:01,netdev=mynet2 \

@@ -5,8 +5,8 @@
 #step2: copy start command
 #step3: modify VM image 
 
-START=1
-END=1
+START=11
+END=12
 KVMDIR=/home/chix/kvm
 DPDKDIR=/home/chix/dpdk
 QEMUDIR=/home/chix/qemu-2.9.0
@@ -34,6 +34,15 @@ if [ ! -d "/mnt/kvm-image" ]; then
   mkdir -p /mnt/kvm-image
 fi
 
+#clear original start-vm-all.sh
+rm -rf /home/chix/kvm/linux-bridge-start/start-vm-all.sh
+
+rm -rf /home/chix/kvm/ovs-dpdk-start/start-vm-all.sh
+
+rm -rf /home/chix/kvm/ovs-nodpdk-start/start-vm-all.sh
+
+modprobe nbd
+lsmod | grep nbd
 
 for ((cur=$START; cur<=$END; cur++))
 do	
@@ -64,8 +73,7 @@ do
 		-net nic,macaddr=00:00:00:00:10:$cur,vlan=1 \\
 		-net tap,vhost=on,id=vnic1,script=$KVMDIR/ovs-if-script/ovs-ifup1,downscript=$KVMDIR/ovs-if-script/ovs-ifdown1,vlan=1 \\
 		-net nic,macaddr=00:00:00:00:11:$cur,vlan=2 \\
-		-net tap,vhost=on,id=vnic2,script=$KVMDIR/ovs-if-script/ovs-ifup2,downscript=$KVMDIR/ovs-if-script/ovs-ifdown2,vlan=2 \\
-		-display sdl -vga std" > $KVMDIR/ovs-nodpdk-start/$cur.sh
+		-net tap,vhost=on,id=vnic2,script=$KVMDIR/ovs-if-script/ovs-ifup2,downscript=$KVMDIR/ovs-if-script/ovs-ifdown2,vlan=2" > $KVMDIR/ovs-nodpdk-start/$cur.sh
 
 
   echo "start to copy kvm linux bridge scripts for VM $cur"
@@ -76,14 +84,12 @@ do
 		-net nic,macaddr=00:00:00:00:10:$cur,vlan=1 \\
 		-net tap,vhost=on,id=vnic1,script=$KVMDIR/lb-if-script/lb-ifup1,downscript=$KVMDIR/lb-if-script/lb-ifdown1,vlan=1 \\
 		-net nic,macaddr=00:00:00:00:11:$cur,vlan=2 \\
-		-net tap,vhost=on,id=vnic2,script=$KVMDIR/lb-if-script/lb-ifup2,downscript=$KVMDIR/lb-if-script/lb-ifdown2,vlan=2 \\
-		-display sdl -vga std" > $KVMDIR/linux-bridge-start/$cur.sh
+		-net tap,vhost=on,id=vnic2,script=$KVMDIR/lb-if-script/lb-ifup2,downscript=$KVMDIR/lb-if-script/lb-ifdown2,vlan=2" > $KVMDIR/linux-bridge-start/$cur.sh
 
 	
   echo "start to mount VM image..."
 
-  modprobe nbd
-  lsmod | grep nbd
+
   $QEMUDIR/qemu-nbd -c /dev/nbd0 $KVMDIR/image/image-$cur.img
   sleep 1
   mount /dev/nbd0p1 /mnt/kvm-image
@@ -93,15 +99,14 @@ do
   #modify /etc/hosts
   sed -i "2s/.*/127.0.1.1\topenvswitch$cur/" /mnt/kvm-image/etc/hosts
   #modify /etc/network/interfaces
-  sed -i "8s/.*/  address 192.168.100.1$cur/" /mnt/kvm-image/etc/network/interfaces
-  sed -i "14s/.*/address 192.168.101.1$cur/" /mnt/kvm-image/etc/network/interfaces
+  sed -i "7s/.*/  address 192.168.100.1$cur/" /mnt/kvm-image/etc/network/interfaces
+  sed -i "14s/.*/  address 192.168.101.1$cur/" /mnt/kvm-image/etc/network/interfaces
   #disconnect
   
   sleep 1
-  #umount /mnt/kvm-image/
+  umount /mnt/kvm-image/
   sleep 1
-  #$QEMUDIR/qemu-nbd -d /dev/nbd0
-
+  $QEMUDIR/qemu-nbd -d /dev/nbd0
 
   echo "bash $cur.sh" >> /home/chix/kvm/linux-bridge-start/start-vm-all.sh
 

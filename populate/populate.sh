@@ -5,8 +5,8 @@
 #step2: copy start command
 #step3: modify VM image 
 
-START=11
-END=12
+START=1
+END=1
 KVMDIR=/home/chix/kvm
 DPDKDIR=/home/chix/dpdk
 QEMUDIR=/home/chix/qemu-2.9.0
@@ -38,7 +38,7 @@ fi
 for ((cur=$START; cur<=$END; cur++))
 do	
   echo "Start to copy Image $cur"
-  #cp /home/chix/kvm/ovs-template.img /home/chix/kvm/image/image-$cur.img
+  cp /home/chix/kvm/ovs-template.img /home/chix/kvm/image/image-$cur.img
   echo "Finish copying Image $cur"
   
   echo "start to copy kvm ovs dpdk scripts for VM $cur"
@@ -85,6 +85,7 @@ do
   modprobe nbd
   lsmod | grep nbd
   $QEMUDIR/qemu-nbd -c /dev/nbd0 $KVMDIR/image/image-$cur.img
+  sleep 1
   mount /dev/nbd0p1 /mnt/kvm-image
 
   #modify /etc/hostname  
@@ -92,13 +93,14 @@ do
   #modify /etc/hosts
   sed -i "2s/.*/127.0.1.1\topenvswitch$cur/" /mnt/kvm-image/etc/hosts
   #modify /etc/network/interfaces
-  sed -i "5s/.*/address 192.168.100.1$cur/" /mnt/kvm-image/etc/network/interfaces
-  sed -i "12s/.*/address 192.168.101.1$cur/" /mnt/kvm-image/etc/network/interfaces
+  sed -i "8s/.*/  address 192.168.100.1$cur/" /mnt/kvm-image/etc/network/interfaces
+  sed -i "14s/.*/address 192.168.101.1$cur/" /mnt/kvm-image/etc/network/interfaces
   #disconnect
   
   sleep 1
-  umount /mnt/kvm-image/
-  $QEMUDIR/qemu-nbd -d /dev/nbd0
+  #umount /mnt/kvm-image/
+  sleep 1
+  #$QEMUDIR/qemu-nbd -d /dev/nbd0
 
 
   echo "bash $cur.sh" >> /home/chix/kvm/linux-bridge-start/start-vm-all.sh

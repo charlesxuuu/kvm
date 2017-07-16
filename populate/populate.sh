@@ -6,7 +6,7 @@
 #step3: modify VM image 
 
 START=11
-END=12
+END=40
 KVMDIR=/home/chix/kvm
 DPDKDIR=/home/chix/dpdk
 QEMUDIR=/home/chix/qemu-2.9.0
@@ -108,11 +108,11 @@ do
   sleep 1
   $QEMUDIR/qemu-nbd -d /dev/nbd0
 
-  echo "bash $cur.sh" >> /home/chix/kvm/linux-bridge-start/start-vm-all.sh
+  echo "bash $cur.sh &" >> /home/chix/kvm/linux-bridge-start/start-vm-all.sh
 
-  echo "bash $cur.sh" >> /home/chix/kvm/ovs-dpdk-start/start-vm-all.sh
+  echo "bash $cur.sh &" >> /home/chix/kvm/ovs-dpdk-start/start-vm-all.sh
   
-  echo "bash $cur.sh" >> /home/chix/kvm/ovs-nodpdk-start/start-vm-all.sh
+  echo "bash $cur.sh &" >> /home/chix/kvm/ovs-nodpdk-start/start-vm-all.sh
 
 	
 #  for ((t=0; t<=0; t++))

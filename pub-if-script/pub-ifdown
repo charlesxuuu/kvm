@@ -1,5 +1,5 @@
 #!/bin/sh
 
-switch='lbbr1'
+switch='br0'
 /sbin/ifconfig $1 0.0.0.0 down
 brctl delif ${switch} $1

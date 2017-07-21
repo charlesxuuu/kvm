@@ -1,5 +1,5 @@
 #!/bin/sh
 
-switch='ovsbr0'
+switch='lbbr0'
 /sbin/ifconfig $1 0.0.0.0 down
-ovs-vsctl del-port ${switch} $1
+brctl delif ${switch} $1

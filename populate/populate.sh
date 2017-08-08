@@ -6,40 +6,39 @@
 #step3: modify VM image 
 
 START=11
-END=40
+END=22
 KVMDIR=/home/chix/kvm
 DPDKDIR=/home/chix/dpdk
 QEMUDIR=/home/chix/qemu-2.9.0
 
 
 
-#require ovs-template.img (qcow2)
+#require template-new.img (qcow2)
 
 if [ ! -d "/home/chix/kvm/image" ]; then
   mkdir -p /home/chix/kvm/image
 fi
 if [ ! -d "/home/chix/kvm/linux-bridge-start" ]; then
   mkdir -p /home/chix/kvm/linux-bridge-start
-  echo "#!/bin/bash" > /home/chix/kvm/linux-bridge-start/start-vm-all.sh
 fi
 if [ ! -d "/home/chix/kvm/ovs-dpdk-start" ]; then
   mkdir -p /home/chix/kvm/ovs-dpdk-start
-  echo "#!/bin/bash" > /home/chix/kvm/ovs-dpdk-start/start-vm-all.sh
 fi
 if [ ! -d "/home/chix/kvm/ovs-nodpdk-start" ]; then
   mkdir -p /home/chix/kvm/ovs-nodpdk-start
-  echo "#!/bin/bash" > /home/chix/kvm/ovs-nodpdk-start/start-vm-all.sh
 fi
 if [ ! -d "/mnt/kvm-image" ]; then
   mkdir -p /mnt/kvm-image
 fi
 
 #clear original start-vm-all.sh
-rm -rf /home/chix/kvm/linux-bridge-start/start-vm-all.sh
+rm -rf /home/chix/kvm/image/*
 
-rm -rf /home/chix/kvm/ovs-dpdk-start/start-vm-all.sh
+rm -rf /home/chix/kvm/linux-bridge-start/*
 
-rm -rf /home/chix/kvm/ovs-nodpdk-start/start-vm-all.sh
+rm -rf /home/chix/kvm/ovs-dpdk-start/*
+
+rm -rf /home/chix/kvm/ovs-nodpdk-start/*
 
 modprobe nbd
 lsmod | grep nbd
@@ -47,7 +46,7 @@ lsmod | grep nbd
 for ((cur=$START; cur<=$END; cur++))
 do	
   echo "Start to copy Image $cur"
-  cp /home/chix/kvm/ovs-template.img /home/chix/kvm/image/image-$cur.img
+  cp /home/chix/kvm/template-new.img /home/chix/kvm/image/image-$cur.img
   echo "Finish copying Image $cur"
   
   echo "start to copy kvm ovs dpdk scripts for VM $cur"
@@ -65,15 +64,16 @@ do
 		-device virtio-net-pci,mac=00:00:00:00:11:$cur,netdev=mynet2" > $KVMDIR/ovs-dpdk-start/$cur.sh
 
 
+	
   echo "start to copy kvm ovs nodpdk scripts for VM $cur"
 
 	 echo " sudo qemu-system-x86_64 -vnc :$cur \\
 		-enable-kvm -smp 8 -m 16384 \\
 		-drive file=$KVMDIR/image/image-$cur.img,if=virtio \\
-		-net nic,macaddr=00:00:00:00:10:$cur,vlan=1 \\
-		-net tap,vhost=on,id=vnic1,script=$KVMDIR/ovs-if-script/ovs-ifup1,downscript=$KVMDIR/ovs-if-script/ovs-ifdown1,vlan=1 \\
-		-net nic,macaddr=00:00:00:00:11:$cur,vlan=2 \\
-		-net tap,vhost=on,id=vnic2,script=$KVMDIR/ovs-if-script/ovs-ifup2,downscript=$KVMDIR/ovs-if-script/ovs-ifdown2,vlan=2" > $KVMDIR/ovs-nodpdk-start/$cur.sh
+		-device virtio-net-pci,mac=00:00:00:00:10:$cur,netdev=vnic1 \\
+		-netdev type=tap,vhost=on,id=vnic1,script=$KVMDIR/ovs-if-script/ovs-ifup1,downscript=$KVMDIR/ovs-if-script/ovs-ifdown1 \\
+		-device virtio-net-pci,mac=00:00:00:00:11:$cur,netdev=vnic2 \\
+		-netdev type=tap,vhost=on,id=vnic2,script=$KVMDIR/ovs-if-script/ovs-ifup2,downscript=$KVMDIR/ovs-if-script/ovs-ifdown2" > $KVMDIR/ovs-nodpdk-start/$cur.sh
 
 
   echo "start to copy kvm linux bridge scripts for VM $cur"
@@ -81,13 +81,12 @@ do
 	  echo " sudo qemu-system-x86_64 -vnc :$cur \\
 		-enable-kvm -smp 8 -m 16384 \\
 		-drive file=$KVMDIR/image/image-$cur.img,if=virtio \\
-		-net nic,macaddr=00:00:00:00:10:$cur,vlan=1 \\
-		-net tap,vhost=on,id=vnic1,script=$KVMDIR/lb-if-script/lb-ifup1,downscript=$KVMDIR/lb-if-script/lb-ifdown1,vlan=1 \\
-		-net nic,macaddr=00:00:00:00:11:$cur,vlan=2 \\
-		-net tap,vhost=on,id=vnic2,script=$KVMDIR/lb-if-script/lb-ifup2,downscript=$KVMDIR/lb-if-script/lb-ifdown2,vlan=2" > $KVMDIR/linux-bridge-start/$cur.sh
+		-device virtio-net-pci,mac=00:00:00:00:10:$cur,netdev=vnic1 \\
+                -netdev type=tap,vhost=on,id=vnic1,script=$KVMDIR/lb-if-script/lb-ifup1,downscript=$KVMDIR/lb-if-script/lb-ifdown1 \\
+		-device virtio-net-pci,mac=00:00:00:00:11:$cur,netdev=vnic2 \\
+                -netdev type=tap,vhost=on,id=vnic2,script=$KVMDIR/lb-if-script/lb-ifup2,downscript=$KVMDIR/lb-if-script/lb-ifdown2" > $KVMDIR/linux-bridge-start/$cur.sh
 
-	
-  echo "start to mount VM image..."
+  echo  "start to mount VM image..."
 
 
   $QEMUDIR/qemu-nbd -c /dev/nbd0 $KVMDIR/image/image-$cur.img
